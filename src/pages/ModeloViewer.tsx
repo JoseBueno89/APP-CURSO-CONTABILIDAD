@@ -1,8 +1,8 @@
 import { AlertTriangle, ChevronRight, Download, Eraser, ExternalLink, FileDown, Info, Search, Sparkles } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { computeFns, getModelo } from '../data/modelos'
-import type { Casilla } from '../types'
+import type { Casilla, FilaModelo } from '../types'
 import { eur, Rich } from '../lib/rich'
 import { useProgress } from '../lib/progress'
 import CasillaTooltip, { useIsSheet } from '../components/CasillaTooltip'
@@ -135,6 +135,20 @@ export default function ModeloViewer() {
   const res = modelo.resultado
   const resVal = res ? values[res.n] ?? 0 : 0
 
+  const boxProps = (c: Casilla) => ({
+    c,
+    value: values[c.n],
+    raw: raw[c.n] ?? '',
+    blank,
+    active: tip?.n === c.n,
+    highlight: highlight === c.n,
+    sheet,
+    onChange: (v: string) => setRaw((r) => ({ ...r, [c.n]: v })),
+    onEnter: () => show(c.n),
+    onLeave: scheduleHide,
+    onPin: () => show(c.n, true),
+  })
+
   return (
     <div className="animate-fade-up">
       <nav className="no-print mb-6 flex items-center gap-1 text-sm text-muted" aria-label="Migas de pan">
@@ -193,7 +207,7 @@ export default function ModeloViewer() {
 
       <p className="no-print mt-4 text-sm text-muted">
         <strong className="text-ink">Modo práctica:</strong> escribe importes en las casillas blancas; las casillas sombreadas se calculan solas.{' '}
-        {sheet ? 'Toca el nombre o el número de una casilla para ver su explicación.' : 'Pasa el ratón o pulsa sobre cualquier casilla para ver su explicación.'}
+        {sheet ? 'Toca el número de una casilla para ver su explicación.' : 'Pasa el ratón o pulsa sobre cualquier casilla para ver su explicación.'}
       </p>
 
       {/* Formulario */}
@@ -204,31 +218,21 @@ export default function ModeloViewer() {
               <h2 className="font-bold text-ink">{s.title}</h2>
               {s.intro && <p className="mt-1 text-sm text-ink/80"><Rich text={s.intro} /></p>}
             </div>
-            <div className="divide-y divide-line">
-              {s.filas.map((f) => (
-                <div key={f.concepto} className="grid gap-3 px-3 py-4 sm:px-5 lg:grid-cols-[minmax(0,15rem)_1fr] lg:items-center">
-                  <div className="text-sm font-medium text-ink">{f.concepto}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {f.casillas.map((c) => (
-                      <CasillaBox
-                        key={c.n}
-                        c={c}
-                        value={values[c.n]}
-                        raw={raw[c.n] ?? ''}
-                        blank={blank}
-                        active={tip?.n === c.n}
-                        highlight={highlight === c.n}
-                        sheet={sheet}
-                        onChange={(v) => setRaw((r) => ({ ...r, [c.n]: v }))}
-                        onEnter={() => show(c.n)}
-                        onLeave={scheduleHide}
-                        onPin={() => show(c.n, true)}
-                      />
-                    ))}
+            {s.columns ? (
+              /* Disposición del formulario oficial: columnas fijas */
+              <GridBody filas={s.filas} columns={s.columns} render={(c) => <CasillaBox key={c.n} variant="cell" {...boxProps(c)} />} />
+            ) : (
+              <div className="divide-y divide-line">
+                {s.filas.map((f) => (
+                  <div key={f.concepto} className="grid gap-3 px-3 py-4 sm:px-5 lg:grid-cols-[minmax(0,15rem)_1fr] lg:items-center">
+                    <div className="text-sm font-medium text-ink">{f.concepto}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {f.casillas.map((c) => <CasillaBox key={c.n} variant="box" {...boxProps(c)} />)}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         ))}
       </div>
@@ -304,31 +308,152 @@ interface BoxProps {
   active: boolean
   highlight: boolean
   sheet: boolean
+  variant: 'box' | 'cell'
   onChange: (v: string) => void
   onEnter: () => void
   onLeave: () => void
   onPin: () => void
 }
 
-function CasillaBox({ c, value, raw, blank, active, highlight, sheet, onChange, onEnter, onLeave, onPin }: BoxProps) {
+/** Sección dibujada como el formulario oficial: concepto a la izquierda, columnas fijas a la derecha */
+function GridBody({ filas, columns, render }: { filas: FilaModelo[]; columns: string[]; render: (c: Casilla) => React.ReactNode }) {
+  const n = columns.length
+  const cols = n >= 3 ? 'form-cols-3' : n === 2 ? 'form-cols-2' : 'form-cols-1'
+
+  // Agrupar filas consecutivas con el mismo "grupo" (llave del formulario)
+  const chunks: { grupo?: string; filas: FilaModelo[] }[] = []
+  for (const f of filas) {
+    const last = chunks[chunks.length - 1]
+    if (f.grupo && last?.grupo === f.grupo) last.filas.push(f)
+    else chunks.push({ grupo: f.grupo, filas: [f] })
+  }
+
+  // Colocar las casillas en las columnas: 'gray' = celda sombreada del formulario; null = hueco vacío
+  const slots = (f: FilaModelo): (Casilla | 'gray' | null)[] => {
+    const cs = f.casillas
+    if (cs.length >= n) return cs.slice(0, n)
+    if (cs.length === 2 && n === 3) return [cs[0], 'gray', cs[1]]
+    return [...Array<null>(n - cs.length).fill(null), ...cs]
+  }
+
+  return (
+    <div className="px-3 pb-2 sm:px-5">
+      {columns.some(Boolean) && (
+        <div className="grid gap-x-4 pb-1 pt-3 lg:grid-cols-[minmax(0,17rem)_1fr]">
+          <div className="hidden lg:block" />
+          <div className={`grid gap-1.5 sm:gap-2 ${cols}`}>
+            {columns.map((h, i) => <div key={i} className="truncate text-center text-[10px] font-bold uppercase tracking-wider text-muted sm:text-[11px]">{h}</div>)}
+          </div>
+        </div>
+      )}
+      {chunks.map((ch, i) => (
+        <div key={i} className="grid gap-x-4 gap-y-2 border-t border-line py-3 first:border-t-0 lg:grid-cols-[minmax(0,17rem)_1fr] lg:items-center">
+          <div className={`text-sm text-ink ${ch.grupo ? 'font-semibold lg:flex lg:items-center lg:self-stretch lg:rounded-r-xl lg:border-r-2 lg:border-primary/40 lg:pr-3' : 'font-medium'}`}>
+            {ch.grupo ?? ch.filas[0].concepto}
+          </div>
+          <div className="space-y-1.5">
+            {ch.filas.map((f) => (
+              <div key={f.concepto} className={`grid gap-1.5 sm:gap-2 ${cols}`} title={ch.grupo ? f.concepto : undefined}>
+                {slots(f).map((c, j) =>
+                  c === 'gray' ? (
+                    <div key={`g${j}`} aria-hidden className="min-h-10 rounded-md bg-line/70" />
+                  ) : c === null ? (
+                    <div key={`e${j}`} aria-hidden />
+                  ) : (
+                    <Fragment key={c.n}>{render(c)}</Fragment>
+                  ),
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const pctOf = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 })
+/** En móvil, reduce la letra de las cifras largas para que no se corten (en escritorio, tamaño normal) */
+const fit = (s: string) => (s.length > 11 ? 'text-[10px]' : s.length > 9 ? 'text-[11px]' : 'text-[13px]') + ' sm:text-sm'
+
+function CasillaBox({ c, value, raw, blank, active, highlight, sheet, variant, onChange, onEnter, onLeave, onPin }: BoxProps) {
   const isText = c.kind === 'text'
   const isInput = c.kind === 'input' || isText
-  const display = c.kind === 'pct' ? `${String(c.rate ?? value ?? 0).replace('.', ',')} %` : blank ? '' : value ? eur(value) : ''
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (focused) inputRef.current?.focus()
+  }, [focused])
+  // En pantallas estrechas el tipo se muestra compacto ("21 %" en lugar de "21,00 %")
+  const pct = (c.rate ?? value ?? 0).toLocaleString('es-ES', { minimumFractionDigits: sheet ? 0 : 2, maximumFractionDigits: 2 })
+  // en móvil, sin el símbolo % (la cabecera de la columna ya lo indica)
+  const display = c.kind === 'pct' ? (sheet && variant === 'cell' ? pct : `${pct} %`) : blank ? '' : value ? eur(value) : ''
+  // Importe escrito: mientras se edita se ve tal cual; al salir, con formato (60.000,00)
+  const shown = isText || focused || !raw.trim() || !Number.isFinite(value ?? NaN) ? raw : c.label === 'Tipo %' ? pctOf(value ?? 0) : eur(value ?? 0)
   const wide = c.label.length > 22
+  const ring = highlight ? 'border-accent ring-4 ring-accent/40' : active ? 'border-accent ring-2 ring-accent/30' : c.redFlags ? 'border-line hover:border-danger/50' : 'border-line hover:border-primary/50'
+  const handlers = {
+    id: `cas-${c.n}`,
+    'data-casilla': c.n,
+    // En pantallas táctiles no hay "hover": la explicación se abre al tocar el número de la casilla
+    onMouseEnter: sheet ? undefined : onEnter,
+    onMouseLeave: sheet ? undefined : onLeave,
+    onClick: (e: React.MouseEvent) => {
+      // en móvil, tocar el valor sirve para editarlo; la explicación se abre con el número de casilla
+      const t = e.target as HTMLElement
+      if (sheet && (t.tagName === 'INPUT' || t.closest('[data-edit]'))) return
+      onPin()
+    },
+  }
+
+  if (variant === 'cell') {
+    return (
+      <div {...handlers} title={c.label} className={`flex min-h-10 min-w-0 cursor-help items-stretch overflow-hidden rounded-md border bg-surface transition ${ring}`}>
+        <span className="flex w-8 shrink-0 flex-col items-center justify-center gap-0.5 bg-[#0b2545] font-mono text-[10.5px] font-semibold text-[#e0bb48] sm:w-9 sm:text-[11px]">
+          {c.n}
+          {c.redFlags && <AlertTriangle className="h-2.5 w-2.5 text-[#ff8a7e]" aria-label="Tiene red flags" />}
+        </span>
+        {isInput && !blank && (focused || !raw.trim()) ? (
+          <input
+            ref={inputRef}
+            value={raw}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => { setFocused(true); if (!sheet) onPin() }}
+            onBlur={() => setFocused(false)}
+            inputMode={isText ? 'text' : 'decimal'}
+            aria-label={`Casilla ${c.n}: ${c.label}`}
+            placeholder={c.label === 'Tipo %' ? '%' : '0,00'}
+            className="w-full min-w-0 bg-transparent px-1.5 text-right font-mono text-[13px] text-ink placeholder:text-muted/50 focus:outline-none sm:px-2 sm:text-sm"
+          />
+        ) : isInput && !blank ? (
+          /* Importe ya escrito: se muestra formateado; al tocarlo pasa a modo edición */
+          <button
+            type="button"
+            data-edit
+            onClick={() => setFocused(true)}
+            aria-label={`Casilla ${c.n}: ${c.label}, valor ${shown}. Pulsa para editar`}
+            className={`flex w-full min-w-0 cursor-text items-center justify-end overflow-hidden whitespace-nowrap px-1.5 font-mono text-ink sm:px-2 ${fit(shown)}`}
+          >
+            {shown}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onFocus={onPin}
+            aria-label={`Casilla ${c.n}: ${c.label}${display ? `, valor ${display}` : ''}`}
+            className={`flex w-full min-w-0 items-center justify-end overflow-hidden whitespace-nowrap px-1.5 font-mono sm:px-2 ${fit(display)} ${c.kind === 'calc' ? 'bg-surface-2 font-semibold text-ink' : 'text-ink'}`}
+          >
+            {display || ' '}
+          </button>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
-      id={`cas-${c.n}`}
-      data-casilla={c.n}
-      // En pantallas táctiles no hay "hover": la explicación se abre al tocar la cabecera de la casilla
-      onMouseEnter={sheet ? undefined : onEnter}
-      onMouseLeave={sheet ? undefined : onLeave}
-      onClick={(e) => {
-        if (sheet && (e.target as HTMLElement).tagName === 'INPUT') return
-        onPin()
-      }}
-      className={`group relative flex min-w-[8.5rem] flex-1 cursor-help flex-col rounded-lg border transition ${wide ? 'basis-56' : 'basis-36'} ${
-        highlight ? 'border-accent ring-4 ring-accent/40' : active ? 'border-accent ring-2 ring-accent/30' : c.redFlags ? 'border-line hover:border-danger/50' : 'border-line hover:border-primary/50'
-      }`}
+      {...handlers}
+      className={`group relative flex min-w-[8.5rem] flex-1 cursor-help flex-col rounded-lg border transition ${wide ? 'basis-56' : 'basis-36'} ${ring}`}
     >
       <div className="flex min-h-7 items-center justify-between gap-2 px-2 pt-1.5">
         <span className="min-w-0 truncate text-[11px] font-medium text-muted" title={c.label}>{c.label}</span>
@@ -339,9 +464,10 @@ function CasillaBox({ c, value, raw, blank, active, highlight, sheet, onChange, 
       </div>
       {isInput && !blank ? (
         <input
-          value={raw}
+          value={shown}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={sheet ? undefined : onPin}
+          onFocus={() => { setFocused(true); if (!sheet) onPin() }}
+          onBlur={() => setFocused(false)}
           inputMode={isText ? 'text' : 'decimal'}
           aria-label={`Casilla ${c.n}: ${c.label}`}
           aria-describedby={active ? `tip-${c.n}` : undefined}

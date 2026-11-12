@@ -32,6 +32,10 @@ Una vez abierta con conexión, funciona también sin conexión. El progreso se g
   fraude carrusel sin solapamientos y con versión móvil; corrección del desplazamiento horizontal en
   móvil y del botón de modo oscuro; buscador global a pantalla completa; las lecciones exigen acertar
   al menos la mitad del quiz; separador de miles uniforme; versión visible en el menú.
+  Botón "Reiniciar curso" al final de cada curso; fraude carrusel como círculo de sociedades con
+  flechas animadas; modelo 303 con la disposición del formulario oficial (filas Base | Tipo | Cuota,
+  casillas 150-170, 123-124, 62-63, 74-75, 76, 108, 109 y fórmulas oficiales de 27, 64, 69 y 71);
+  390 en columnas Base | Cuota; importes formateados al salir de la casilla.
 - **1.0** — Versión inicial.
 
 ## Estructura

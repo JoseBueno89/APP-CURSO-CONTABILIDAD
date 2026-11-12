@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { getCourse } from '../data/courses'
 import { useProgress } from '../lib/progress'
 import { CourseIcon, Pill, ProgressBar } from '../components/ui'
+import ResetCourse from '../components/ResetCourse'
 
 export default function CoursePage() {
   const { courseId = '' } = useParams()
@@ -73,6 +74,10 @@ export default function CoursePage() {
           </li>
         ))}
       </ol>
+
+      {course.modules[0]?.lessons[0] && (
+        <ResetCourse courseId={course.id} startUrl={`/curso/${course.id}/${course.modules[0].lessons[0].id}`} />
+      )}
     </div>
   )
 }

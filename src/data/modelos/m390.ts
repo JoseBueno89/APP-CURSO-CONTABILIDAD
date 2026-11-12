@@ -31,6 +31,7 @@ export const modelo390: ModeloTributario = {
       id: 'devengado',
       title: 'IVA devengado en el año',
       intro: 'Suma de todo el IVA repercutido y autorrepercutido durante el ejercicio. Debe coincidir con la suma de las casillas equivalentes de los **cuatro 303**.',
+      columns: ['Base imponible', 'Cuota'],
       filas: [
         { concepto: 'Régimen ordinario al 4 %', casillas: par('01', '02', 'tipo 4 %', 'Total anual de ventas **sin IVA** al tipo superreducido.', 'Suma de la casilla 01 de los cuatro 303.', 'Ventas de pan de 8.000 € por trimestre → 32.000 € en el año.', {}, 4) },
         { concepto: 'Régimen ordinario al 10 %', casillas: par('03', '04', 'tipo 10 %', 'Total anual de ventas **sin IVA** al tipo reducido.', 'Suma de la casilla 04 de los cuatro 303.', 'Restaurante con 45.000 € por trimestre → 180.000 € en el año.', {}, 10) },
@@ -66,6 +67,7 @@ export const modelo390: ModeloTributario = {
       id: 'deducible',
       title: 'IVA deducible en el año',
       intro: 'Suma de todo el IVA soportado que la empresa se ha deducido. Equivalente anual de las casillas 28 a 45 del 303.',
+      columns: ['Base', 'Cuota'],
       filas: [
         { concepto: 'Operaciones interiores corrientes', casillas: par('48', '49', 'compras interiores corrientes', 'Compras y gastos corrientes a proveedores españoles durante el año.', 'Suma de las casillas 28/29 de los 303.', 'Compras de 30.000 € por trimestre → 120.000 €.', { redFlags: ['Un IVA deducible desproporcionado frente al devengado suele esconder **facturas falsas** de proveedores.'] }) },
         { concepto: 'Operaciones interiores bienes de inversión', casillas: par('50', '51', 'bienes de inversión interiores', 'Compras de bienes de inversión en España en el año.', 'Suma de las casillas 30/31 de los 303.', 'Furgoneta de 25.000 €.') },

@@ -4,6 +4,7 @@ import { modelos } from '../data/modelos'
 import { curso3Meta } from '../data/curso2-iva'
 import { useProgress } from '../lib/progress'
 import { PageHeader, Pill } from '../components/ui'
+import ResetCourse from '../components/ResetCourse'
 
 export default function ModelosPage() {
   const { modelosVistos } = useProgress()
@@ -43,6 +44,8 @@ export default function ModelosPage() {
           )
         })}
       </div>
+
+      <ResetCourse courseId="modelos" startUrl="/modelos/303" />
     </div>
   )
 }

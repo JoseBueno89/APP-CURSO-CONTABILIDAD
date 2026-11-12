@@ -5,6 +5,7 @@ import { useProgress } from '../lib/progress'
 import BlockRenderer from '../components/BlockRenderer'
 import Quiz from '../components/Quiz'
 import { Pill } from '../components/ui'
+import ResetCourse from '../components/ResetCourse'
 
 export default function LessonPage() {
   const { courseId = '', lessonId = '' } = useParams()
@@ -49,6 +50,13 @@ export default function LessonPage() {
           <Link to={`/curso/${course.id}`} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-surface dark:text-[#0a1220]">Volver al curso</Link>
         )}
       </div>
+
+      {/* Última lección del curso: opción de reiniciarlo */}
+      {!next && (
+        <div className="mt-8">
+          <ResetCourse courseId={course.id} startUrl={`/curso/${course.id}/${course.modules[0].lessons[0].id}`} compact />
+        </div>
+      )}
     </article>
   )
 }

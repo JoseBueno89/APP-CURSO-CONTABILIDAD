@@ -11,6 +11,8 @@ interface ProgressApi extends ProgressState {
   completeLesson: (id: string, score: number, total: number) => void
   markModelo: (id: string) => void
   setNombre: (n: string) => void
+  /** Borra el progreso de un curso ('modelos' = biblioteca de modelos) */
+  resetCourse: (courseId: string) => void
   courseProgress: (courseId: string) => { done: number; total: number; pct: number }
   reset: () => void
 }
@@ -64,11 +66,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const setNombre = useCallback((nombre: string) => setState((s) => ({ ...s, nombre })), [])
 
+  const resetCourse = useCallback((courseId: string) => {
+    if (courseId === 'modelos') {
+      setState((s) => ({ ...s, modelosVistos: [] }))
+      return
+    }
+    const c = courses.find((x) => x.id === courseId)
+    if (!c) return
+    const ids = new Set(c.modules.flatMap((m) => m.lessons.map((l) => l.id)))
+    setState((s) => ({ ...s, completed: Object.fromEntries(Object.entries(s.completed).filter(([k]) => !ids.has(k))) }))
+  }, [])
+
   const reset = useCallback(() => setState(empty), [])
 
   const api = useMemo(
-    () => ({ ...state, completeLesson, markModelo, setNombre, courseProgress, reset }),
-    [state, completeLesson, markModelo, setNombre, courseProgress, reset],
+    () => ({ ...state, completeLesson, markModelo, setNombre, resetCourse, courseProgress, reset }),
+    [state, completeLesson, markModelo, setNombre, resetCourse, courseProgress, reset],
   )
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

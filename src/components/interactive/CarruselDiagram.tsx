@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, Landmark, RotateCcw } from 'lucide-react'
 import { eur, Rich } from '../../lib/rich'
 
-interface Node { id: string; name: string; role: string; pais: string; ue: boolean }
+interface Node { id: string; name: string[]; full: string; role: string; pais: string; ue: boolean }
 const nodes: Node[] = [
-  { id: 'A', name: 'Proveedor UE', role: 'Conduit', pais: 'Alemania', ue: true },
-  { id: 'B', name: 'Trucha', role: 'Missing trader', pais: 'España', ue: false },
-  { id: 'C', name: 'Pantalla', role: 'Buffer', pais: 'España', ue: false },
-  { id: 'D', name: 'Broker', role: 'Exportador', pais: 'España', ue: false },
-  { id: 'E', name: 'Cliente UE', role: 'Conduit', pais: 'Francia', ue: true },
+  { id: 'A', name: ['Proveedor', 'UE'], full: 'Proveedor UE', role: 'Conduit', pais: 'Alemania', ue: true },
+  { id: 'B', name: ['Trucha'], full: 'Trucha', role: 'Missing trader', pais: 'España', ue: false },
+  { id: 'C', name: ['Pantalla'], full: 'Pantalla', role: 'Buffer', pais: 'España', ue: false },
+  { id: 'D', name: ['Broker'], full: 'Broker', role: 'Exportador', pais: 'España', ue: false },
+  { id: 'E', name: ['Cliente', 'UE'], full: 'Cliente UE', role: 'Conduit', pais: 'Francia', ue: true },
 ]
 
 interface Step {
@@ -32,112 +32,108 @@ const steps: Step[] = [
   { from: 4, to: 0, label: 'La mercancía vuelve al origen', title: 'El carrusel vuelve a girar', text: 'El cliente francés (controlado por la organización) devuelve la mercancía al proveedor alemán y **el ciclo empieza de nuevo** con otra trucha. Los mismos 1.000 procesadores pueden dar decenas de vueltas. **Cada vuelta, Hacienda pierde 207.900 €.**', flag: 'La misma mercancía (mismos números de serie) aparece en operaciones sucesivas: circularidad.', ingresado: 1050, devuelto: 208950, noIngresado: 207900 },
 ]
 
-/* ---------- Geometría del diagrama (escritorio) ---------- */
-const W = 760
-const H = 500
-const cx = W / 2
-const cy = 250
-const BW = 150
-const BH = 60
-const pos = nodes.map((_, i) => {
-  const a = (-90 + i * 72) * (Math.PI / 180)
-  return { x: cx + 265 * Math.cos(a), y: cy + 175 * Math.sin(a) }
-})
+/* ---------- Geometría del círculo ---------- */
+const S = 400 // tamaño del lienzo (cuadrado)
+const C = S / 2 // centro
+const R = 135 // radio del anillo
+const NR = 42 // radio de cada sociedad
+const deg = (d: number) => (d * Math.PI) / 180
+const angle = (i: number) => -90 + i * 72 // A arriba, sentido horario
+const pt = (a: number, r = R) => ({ x: C + r * Math.cos(deg(a)), y: C + r * Math.sin(deg(a)) })
+// separación angular para que la flecha empiece y acabe fuera del círculo de cada sociedad
+const GAP = ((NR + 7) / R) * (180 / Math.PI)
 
-const inBox = (p: { x: number; y: number }, i: number, pad = 8) =>
-  Math.abs(p.x - pos[i].x) <= BW / 2 + pad && Math.abs(p.y - pos[i].y) <= BH / 2 + pad
-
-/** Curva entre dos nodos, recortada para empezar y acabar en el borde de cada caja */
-function edge(i: number, j: number) {
-  const p1 = pos[i]
-  const p2 = pos[j]
-  const mx = (p1.x + p2.x) / 2
-  const my = (p1.y + p2.y) / 2
-  const dx = mx - cx
-  const dy = my - cy
-  const len = Math.hypot(dx, dy) || 1
-  const c = { x: mx + (dx / len) * 50, y: my + (dy / len) * 50 }
-  const q = (t: number) => ({
-    x: (1 - t) ** 2 * p1.x + 2 * (1 - t) * t * c.x + t ** 2 * p2.x,
-    y: (1 - t) ** 2 * p1.y + 2 * (1 - t) * t * c.y + t ** 2 * p2.y,
-  })
-  let t0 = 0
-  while (t0 < 0.5 && inBox(q(t0), i)) t0 += 0.01
-  let t1 = 1
-  while (t1 > 0.5 && inBox(q(t1), j, 12)) t1 -= 0.01
-  // sub-curva [t0, t1] de una Bézier cuadrática
-  const s = q(t0)
-  const e = q(t1)
-  const ctrl = {
-    x: (1 - t0) * (1 - t1) * p1.x + ((1 - t0) * t1 + t0 * (1 - t1)) * c.x + t0 * t1 * p2.x,
-    y: (1 - t0) * (1 - t1) * p1.y + ((1 - t0) * t1 + t0 * (1 - t1)) * c.y + t0 * t1 * p2.y,
-  }
-  return { d: `M${s.x.toFixed(1)},${s.y.toFixed(1)} Q${ctrl.x.toFixed(1)},${ctrl.y.toFixed(1)} ${e.x.toFixed(1)},${e.y.toFixed(1)}`, mid: q(0.5) }
+/** Arco del anillo entre dos sociedades consecutivas (sentido horario) */
+function arc(i: number, j: number) {
+  const a1 = angle(i) + GAP
+  let a2 = angle(j) - GAP
+  if (a2 < a1) a2 += 360
+  const p1 = pt(a1)
+  const p2 = pt(a2)
+  return { d: `M${p1.x.toFixed(1)},${p1.y.toFixed(1)} A${R},${R} 0 0 1 ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`, mid: pt((a1 + a2) / 2) }
 }
+// los 5 tramos del ciclo A→B→C→D→E→A
+const ring = nodes.map((_, i) => arc(i, (i + 1) % nodes.length))
 
 function Diagram({ step }: { step: number }) {
   const done = steps.slice(0, step)
   const cur = step > 0 ? steps[step - 1] : null
   const truchaGone = step >= 3
   const saldo = (cur?.ingresado ?? 0) - (cur?.devuelto ?? 0)
+  // qué tramos del anillo ya se han recorrido y cuál está activo
+  const tramoDeStep = (s: Step) => (s.from === s.to ? -1 : s.from)
+  const recorridos = new Set(done.map(tramoDeStep).filter((t) => t >= 0))
+  const activo = cur ? tramoDeStep(cur) : -1
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Diagrama del fraude carrusel">
+    <svg viewBox={`0 0 ${S} ${S}`} className="h-auto w-full" role="img" aria-label="Diagrama circular del fraude carrusel">
       <defs>
-        <marker id="car-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" style={{ fill: 'var(--teal)' }} />
-        </marker>
-        <marker id="car-arr-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" style={{ fill: 'var(--accent)' }} />
-        </marker>
+        {(['teal', 'accent', 'border'] as const).map((c) => (
+          <marker key={c} id={`ring-arr-${c}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style={{ fill: `var(--${c})` }} />
+          </marker>
+        ))}
       </defs>
 
       {/* Contador central */}
-      <text x={cx} y={cy - 8} textAnchor="middle" fontSize="14" fontWeight="600" style={{ fill: 'var(--muted)' }}>Hacienda española</text>
-      <text x={cx} y={cy + 20} textAnchor="middle" fontSize="24" fontWeight="600" fontFamily="IBM Plex Mono, monospace" style={{ fill: saldo < 0 ? 'var(--danger)' : 'var(--text)' }}>
+      <text x={C} y={C + 8} textAnchor="middle" fontSize="13" fontWeight="600" style={{ fill: 'var(--muted)' }}>Hacienda</text>
+      <text x={C} y={C + 32} textAnchor="middle" fontSize="19" fontWeight="600" fontFamily="IBM Plex Mono, monospace" style={{ fill: saldo < 0 ? 'var(--danger)' : 'var(--text)' }}>
         {saldo < 0 ? '−' : ''}{eur(Math.abs(saldo))} €
       </text>
 
-      {/* Flechas */}
-      {done.map((s, k) => {
-        if (s.from === s.to) return null
-        const { d } = edge(s.from, s.to)
-        const active = k === step - 1
+      {/* Anillo: tramos pendientes (tenues), recorridos (verde azulado) y activo (dorado, animado) */}
+      {ring.map((r, i) => {
+        const isActive = i === activo
+        const isDone = recorridos.has(i)
+        const color = isActive ? 'accent' : isDone ? 'teal' : 'border'
         return (
-          <path key={k} d={d} fill="none" strokeWidth={active ? 3.5 : 2.2} className={active ? 'flow-line' : ''}
-            markerEnd={`url(#${active ? 'car-arr-on' : 'car-arr'})`}
-            style={{ stroke: active ? 'var(--accent)' : 'var(--teal)', opacity: active ? 1 : 0.55 }} />
-        )
-      })}
-
-      {/* Nodos */}
-      {nodes.map((n, i) => {
-        const p = pos[i]
-        const gone = n.id === 'B' && truchaGone
-        const involved = cur && (cur.from === i || cur.to === i)
-        return (
-          <g key={n.id} style={{ opacity: gone ? 0.75 : 1 }}>
-            <rect x={p.x - BW / 2} y={p.y - BH / 2} width={BW} height={BH} rx="12"
-              strokeWidth={involved ? 3 : 1.5} strokeDasharray={gone ? '6 4' : undefined}
-              style={{ fill: n.ue ? 'var(--teal-soft)' : 'var(--primary-soft)', stroke: involved ? 'var(--accent)' : n.ue ? 'var(--teal)' : 'var(--primary)' }} />
-            <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="16" fontWeight="700" style={{ fill: 'var(--text)' }}>{n.name}</text>
-            {gone ? (
-              <text x={p.x} y={p.y + 15} textAnchor="middle" fontSize="12" fontWeight="700" style={{ fill: 'var(--danger)' }}>DESAPARECIDA</text>
-            ) : (
-              <text x={p.x} y={p.y + 15} textAnchor="middle" fontSize="12" style={{ fill: 'var(--muted)' }}>{n.role} · {n.pais}</text>
+          <g key={i}>
+            <path d={r.d} fill="none" strokeLinecap="round"
+              strokeWidth={isActive ? 4 : isDone ? 3 : 2}
+              strokeDasharray={isDone || isActive ? undefined : '4 6'}
+              className={isActive ? 'flow-line' : ''}
+              markerEnd={`url(#ring-arr-${color})`}
+              style={{ stroke: `var(--${color})`, opacity: isActive ? 1 : isDone ? 0.8 : 0.9 }} />
+            {isActive && (
+              <circle r="6" style={{ fill: 'var(--accent)' }}>
+                <animateMotion dur="1.6s" repeatCount="indefinite" path={r.d} />
+              </circle>
             )}
           </g>
         )
       })}
 
-      {/* Número de paso sobre cada flecha (o junto a la trucha en el paso 3) */}
+      {/* Sociedades */}
+      {nodes.map((n, i) => {
+        const p = pt(angle(i))
+        const gone = n.id === 'B' && truchaGone
+        const involved = cur && (cur.from === i || cur.to === i)
+        // nombre (1-2 líneas) + país dentro del círculo, centrados verticalmente
+        const lines = n.name.length
+        const top = p.y - ((lines - 1) * 13 + 13) / 2 + 4
+        return (
+          <g key={n.id}>
+            {involved && <circle cx={p.x} cy={p.y} r={NR + 7} style={{ fill: 'var(--accent)', opacity: 0.18 }} />}
+            <circle cx={p.x} cy={p.y} r={NR} strokeWidth={involved ? 3 : 1.8} strokeDasharray={gone ? '5 4' : undefined}
+              style={{ fill: gone ? 'var(--surface-2)' : n.ue ? 'var(--teal-soft)' : 'var(--primary-soft)', stroke: gone ? 'var(--danger)' : involved ? 'var(--accent)' : n.ue ? 'var(--teal)' : 'var(--primary)' }} />
+            {n.name.map((line, k) => (
+              <text key={k} x={p.x} y={top + k * 13} textAnchor="middle" fontSize="12.5" fontWeight="700"
+                style={{ fill: gone ? 'var(--muted)' : 'var(--text)', textDecoration: gone ? 'line-through' : undefined }}>{line}</text>
+            ))}
+            <text x={p.x} y={top + lines * 13 + 1} textAnchor="middle" fontSize={gone ? 9.5 : 10.5} fontWeight={gone ? 700 : 500}
+              style={{ fill: gone ? 'var(--danger)' : 'var(--muted)' }}>{gone ? 'DESAPARECIDA' : n.pais}</text>
+          </g>
+        )
+      })}
+
+      {/* Número de paso sobre cada tramo (el paso 3 se marca junto a la trucha) */}
       {done.map((s, k) => {
-        const active = k === step - 1
-        const at = s.from === s.to ? { x: pos[s.from].x + BW / 2 - 2, y: pos[s.from].y - BH / 2 + 2 } : edge(s.from, s.to).mid
+        const isActive = k === step - 1
+        const at = s.from === s.to ? pt(angle(s.from), R + NR + 14) : ring[s.from].mid
         return (
           <g key={`b${k}`}>
-            <circle cx={at.x} cy={at.y} r="14" strokeWidth="2" style={{ fill: active ? 'var(--accent)' : 'var(--surface)', stroke: active ? 'var(--accent)' : 'var(--teal)' }} />
-            <text x={at.x} y={at.y + 4.5} textAnchor="middle" fontSize="13" fontWeight="700" style={{ fill: active ? '#0b2545' : 'var(--text)' }}>{k + 1}</text>
+            <circle cx={at.x} cy={at.y} r="11" strokeWidth="2" style={{ fill: isActive ? 'var(--accent)' : 'var(--surface)', stroke: isActive ? 'var(--accent)' : s.from === s.to ? 'var(--danger)' : 'var(--teal)' }} />
+            <text x={at.x} y={at.y + 4} textAnchor="middle" fontSize="11.5" fontWeight="700" style={{ fill: isActive ? '#0b2545' : 'var(--text)' }}>{k + 1}</text>
           </g>
         )
       })}
@@ -145,20 +141,8 @@ function Diagram({ step }: { step: number }) {
   )
 }
 
-/* Versión móvil: secuencia vertical legible en pantallas estrechas */
+/* Secuencia de pasos (solo móvil, debajo del círculo) */
 function MobileFlow({ step }: { step: number }) {
-  if (step === 0) {
-    return (
-      <div className="grid grid-cols-2 gap-2">
-        {nodes.map((n) => (
-          <div key={n.id} className={`rounded-xl border p-2.5 ${n.ue ? 'border-teal bg-teal-soft' : 'border-primary/50 bg-primary-soft'}`}>
-            <div className="text-sm font-bold text-ink">{n.name}</div>
-            <div className="text-[11px] text-muted">{n.role} · {n.pais}</div>
-          </div>
-        ))}
-      </div>
-    )
-  }
   return (
     <ol className="space-y-1">
       {steps.slice(0, step).map((s, k) => {
@@ -171,7 +155,7 @@ function MobileFlow({ step }: { step: number }) {
               <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-accent text-[#0b2545]' : 'bg-surface-2 text-ink'}`}>{k + 1}</span>
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-ink">
-                  {s.from === s.to ? <>{from.name} <span className="text-danger">desaparece</span></> : <>{from.name} → {to.name}</>}
+                  {s.from === s.to ? <>{from.full} <span className="text-danger">desaparece</span></> : <>{from.full} → {to.full}</>}
                 </div>
                 <div className="font-mono text-xs text-muted">{s.label}</div>
               </div>
@@ -202,24 +186,26 @@ export default function CarruselDiagram() {
         </div>
       </div>
 
-      {/* Diagrama a ancho completo; explicación y cuenta de Hacienda debajo */}
       <div>
+        {/* Círculo de sociedades (todas las pantallas) */}
         <div className="border-b border-line p-3">
-          <div className="hidden sm:block"><Diagram step={step} /></div>
-          <div className="sm:hidden"><MobileFlow step={step} /></div>
-          <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 pb-1 text-xs text-muted">
-            <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-primary bg-primary-soft" /> Sociedad española</span>
-            <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-teal bg-teal-soft" /> Sociedad de otro Estado UE</span>
+          <div className="mx-auto max-w-[520px]"><Diagram step={step} /></div>
+          <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 pb-1 text-xs text-muted">
+            <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border border-primary bg-primary-soft" /> Sociedad española</span>
+            <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border border-teal bg-teal-soft" /> Sociedad de otro Estado UE</span>
+            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-accent" /> Operación en curso</span>
           </div>
+          {/* En móvil, además, la secuencia paso a paso con importes */}
+          {step > 0 && <div className="mt-3 sm:hidden"><MobileFlow step={step} /></div>}
         </div>
 
         <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" aria-live="polite">
           {!cur ? (
             <div className="text-sm text-ink/90">
-              <p>Vas a seguir el recorrido de un lote de <strong>1.000 procesadores</strong> por cinco sociedades. Fíjate en dos cosas:</p>
+              <p>Vas a seguir el recorrido de un lote de <strong>1.000 procesadores</strong> por cinco sociedades que forman un <strong>círculo</strong>. Fíjate en dos cosas:</p>
               <ul className="mt-3 list-disc space-y-1 pl-5">
                 <li>dónde se cobra el IVA y dónde <strong>no se ingresa</strong>;</li>
-                <li>la <strong>cuenta de Hacienda</strong>, que se va actualizando en cada paso.</li>
+                <li>el contador de <strong>Hacienda</strong> en el centro del círculo.</li>
               </ul>
               <p className="mt-3 text-muted">Pulsa <strong className="text-ink">Empezar</strong>.</p>
             </div>
@@ -231,7 +217,7 @@ export default function CarruselDiagram() {
               </div>
               <div className="mt-3 rounded-lg bg-surface-2 px-3 py-2">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-                  {cur.from === cur.to ? nodes[cur.from].name : `${nodes[cur.from].name} → ${nodes[cur.to].name}`}
+                  {cur.from === cur.to ? nodes[cur.from].full : `${nodes[cur.from].full} → ${nodes[cur.to].full}`}
                 </div>
                 <div className="font-mono text-base font-semibold text-ink">{cur.label}</div>
               </div>

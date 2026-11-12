@@ -71,6 +71,8 @@ export interface Casilla {
 export interface FilaModelo {
   concepto: string
   casillas: Casilla[]
+  /** Filas consecutivas con el mismo grupo se agrupan bajo una llave, como en el formulario oficial */
+  grupo?: string
 }
 
 export interface SeccionModelo {
@@ -78,6 +80,12 @@ export interface SeccionModelo {
   title: string
   intro?: string
   filas: FilaModelo[]
+  /**
+   * Si se indica, la sección se dibuja como el formulario oficial: columnas fijas con estas cabeceras
+   * ('' = columna sin cabecera). Las filas con menos casillas que columnas se alinean a la derecha
+   * (con 2 casillas en 3 columnas, la central queda en gris, como el "Tipo %" de las adquisiciones).
+   */
+  columns?: string[]
 }
 
 export interface ModeloTributario {
