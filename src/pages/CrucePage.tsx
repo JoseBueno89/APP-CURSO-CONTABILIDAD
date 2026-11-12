@@ -44,7 +44,7 @@ export default function CrucePage() {
       </div>
       <p className="mb-6 text-sm text-muted">{escenarios.find((e) => e.id === esc)?.desc}</p>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         {/* Entradas */}
         <div className="space-y-6">
           <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">

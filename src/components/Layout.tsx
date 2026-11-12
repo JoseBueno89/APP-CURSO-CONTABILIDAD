@@ -3,6 +3,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import GlobalSearch from './GlobalSearch'
 
+declare const __APP_VERSION__: string
+const APP_VERSION = __APP_VERSION__
+
 const nav: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
   { to: '/', label: 'Inicio', icon: <LayoutDashboard className="h-5 w-5" />, end: true },
   { to: '/curso/contabilidad', label: 'Contabilidad de Sociedades', icon: <Building2 className="h-5 w-5" /> },
@@ -71,7 +74,14 @@ export default function Layout() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
+    setOpen(false)
   }, [loc.pathname])
+
+  // Bloquear el scroll de fondo mientras el menú móvil está abierto
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   return (
     <div className="min-h-screen lg:pl-72 print:pl-0">
@@ -83,6 +93,7 @@ export default function Layout() {
         </div>
         <p className="text-[11px] leading-relaxed text-[#7f95b8]">
           Contenido formativo. Contrasta siempre con la normativa vigente y la Sede Electrónica de la AEAT.
+          <span className="mt-1 block font-mono text-[#5f7699]">v{APP_VERSION}</span>
         </p>
       </aside>
 
@@ -90,21 +101,22 @@ export default function Layout() {
       {open && (
         <div className="no-print fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-72 bg-[#0b2545] px-5 py-6 animate-fade-up">
-            <div className="mb-8 flex items-center justify-between">
+          <div className="absolute inset-y-0 left-0 flex w-[85vw] max-w-72 flex-col overflow-y-auto bg-[#0b2545] px-5 py-6 animate-fade-up">
+            <div className="mb-8 flex items-center justify-between gap-3">
               <Brand />
-              <button onClick={() => setOpen(false)} className="text-white" aria-label="Cerrar menú">
+              <button onClick={() => setOpen(false)} className="shrink-0 rounded-lg p-1 text-white hover:bg-white/10" aria-label="Cerrar menú">
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <SideNav onNavigate={() => setOpen(false)} />
+            <div className="flex-1"><SideNav onNavigate={() => setOpen(false)} /></div>
+            <p className="mt-6 font-mono text-[11px] text-[#5f7699]">v{APP_VERSION}</p>
           </div>
         </div>
       )}
 
       {/* Topbar */}
-      <header className="no-print sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-line bg-surface/85 px-4 backdrop-blur sm:px-8">
-        <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Abrir menú">
+      <header className="no-print sticky top-0 z-20 flex h-16 items-center justify-between gap-2 border-b border-line bg-surface/85 px-3 backdrop-blur sm:gap-3 sm:px-8">
+        <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg lg:hidden" onClick={() => setOpen(true)} aria-label="Abrir menú">
           <Menu className="h-6 w-6 text-ink" />
         </button>
         <GlobalSearch />

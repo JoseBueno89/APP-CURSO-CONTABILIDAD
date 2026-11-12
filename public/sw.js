@@ -1,7 +1,7 @@
 /* Service worker: permite usar la app sin conexión una vez visitada.
    - Páginas: primero la red (para recibir actualizaciones) y, sin conexión, la copia guardada.
    - Archivos de la app y fuentes: copia guardada, actualizándola en segundo plano. */
-const CACHE = 'academia-fiscal-v1'
+const CACHE = 'academia-fiscal-v1.01'
 const PRECACHE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png']
 
 self.addEventListener('install', (event) => {

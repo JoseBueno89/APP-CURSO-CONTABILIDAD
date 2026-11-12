@@ -33,7 +33,7 @@ export default function LessonPage() {
 
       <BlockRenderer blocks={lesson.blocks} />
 
-      <Quiz questions={lesson.quiz} onFinish={(s, t) => completeLesson(lesson.id, s, t)} />
+      <Quiz questions={lesson.quiz} onFinish={(s, t) => { if (s / t >= 0.5) completeLesson(lesson.id, s, t) }} />
 
       <div className="mt-10 flex justify-between gap-4 border-t border-line pt-6">
         {prev ? (

@@ -5,7 +5,7 @@ import { computeFns, getModelo } from '../data/modelos'
 import type { Casilla } from '../types'
 import { eur, Rich } from '../lib/rich'
 import { useProgress } from '../lib/progress'
-import CasillaTooltip from '../components/CasillaTooltip'
+import CasillaTooltip, { useIsSheet } from '../components/CasillaTooltip'
 import { Pill } from '../components/ui'
 
 function parseNum(s: string): number {
@@ -28,6 +28,7 @@ export default function ModeloViewer() {
   const [notFound, setNotFound] = useState(false)
   const [printMode, setPrintMode] = useState<PrintMode>(null)
   const hideTimer = useRef<number | undefined>(undefined)
+  const sheet = useIsSheet()
 
   useEffect(() => {
     if (modelo?.disponible) markModelo(modelo.id)
@@ -67,7 +68,7 @@ export default function ModeloViewer() {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setTip(null)
     const onDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (!target.closest('[role="tooltip"]') && !target.closest('[data-casilla]')) setTip(null)
+      if (!target.closest('[data-tooltip]') && !target.closest('[data-casilla]')) setTip(null)
     }
     window.addEventListener('scroll', update, true)
     window.addEventListener('resize', update)
@@ -164,7 +165,7 @@ export default function ModeloViewer() {
       </header>
 
       {/* Barra de herramientas */}
-      <div className="no-print sticky top-16 z-10 mt-6 flex flex-col gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-sm backdrop-blur lg:flex-row lg:items-center">
+      <div className="no-print z-10 mt-6 flex flex-col gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-sm backdrop-blur sm:sticky sm:top-16 lg:flex-row lg:items-center">
         <form onSubmit={onSearch} className="flex flex-1 items-center gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -191,7 +192,8 @@ export default function ModeloViewer() {
       </div>
 
       <p className="no-print mt-4 text-sm text-muted">
-        <strong className="text-ink">Modo práctica:</strong> escribe importes en las casillas blancas; las casillas sombreadas se calculan solas. Pasa el ratón o pulsa sobre cualquier casilla para ver su explicación.
+        <strong className="text-ink">Modo práctica:</strong> escribe importes en las casillas blancas; las casillas sombreadas se calculan solas.{' '}
+        {sheet ? 'Toca el nombre o el número de una casilla para ver su explicación.' : 'Pasa el ratón o pulsa sobre cualquier casilla para ver su explicación.'}
       </p>
 
       {/* Formulario */}
@@ -204,7 +206,7 @@ export default function ModeloViewer() {
             </div>
             <div className="divide-y divide-line">
               {s.filas.map((f) => (
-                <div key={f.concepto} className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,15rem)_1fr] lg:items-center">
+                <div key={f.concepto} className="grid gap-3 px-3 py-4 sm:px-5 lg:grid-cols-[minmax(0,15rem)_1fr] lg:items-center">
                   <div className="text-sm font-medium text-ink">{f.concepto}</div>
                   <div className="flex flex-wrap gap-2">
                     {f.casillas.map((c) => (
@@ -216,6 +218,7 @@ export default function ModeloViewer() {
                         blank={blank}
                         active={tip?.n === c.n}
                         highlight={highlight === c.n}
+                        sheet={sheet}
                         onChange={(v) => setRaw((r) => ({ ...r, [c.n]: v }))}
                         onEnter={() => show(c.n)}
                         onLeave={scheduleHide}
@@ -235,7 +238,7 @@ export default function ModeloViewer() {
         <div className="no-print mt-6 flex flex-col items-start justify-between gap-3 rounded-2xl bg-[#0b2545] p-6 text-white sm:flex-row sm:items-center">
           <div>
             <div className="text-xs uppercase tracking-[0.16em] text-[#9fb4d4]">{res.label} (casilla {res.n})</div>
-            <div className="mt-1 font-mono text-3xl font-semibold">{eur(resVal)} €</div>
+            <div className="mt-1 font-mono text-2xl font-semibold sm:text-3xl">{eur(resVal)} €</div>
           </div>
           {res.signo && (
             <Pill tone={resVal > 0 ? 'accent' : resVal < 0 ? 'teal' : 'neutral'}>
@@ -300,13 +303,14 @@ interface BoxProps {
   blank: boolean
   active: boolean
   highlight: boolean
+  sheet: boolean
   onChange: (v: string) => void
   onEnter: () => void
   onLeave: () => void
   onPin: () => void
 }
 
-function CasillaBox({ c, value, raw, blank, active, highlight, onChange, onEnter, onLeave, onPin }: BoxProps) {
+function CasillaBox({ c, value, raw, blank, active, highlight, sheet, onChange, onEnter, onLeave, onPin }: BoxProps) {
   const isText = c.kind === 'text'
   const isInput = c.kind === 'input' || isText
   const display = c.kind === 'pct' ? `${String(c.rate ?? value ?? 0).replace('.', ',')} %` : blank ? '' : value ? eur(value) : ''
@@ -315,16 +319,20 @@ function CasillaBox({ c, value, raw, blank, active, highlight, onChange, onEnter
     <div
       id={`cas-${c.n}`}
       data-casilla={c.n}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      onClick={onPin}
-      className={`group relative flex min-w-[9.5rem] flex-1 cursor-help flex-col rounded-lg border transition ${wide ? 'basis-56' : 'basis-36'} ${
+      // En pantallas táctiles no hay "hover": la explicación se abre al tocar la cabecera de la casilla
+      onMouseEnter={sheet ? undefined : onEnter}
+      onMouseLeave={sheet ? undefined : onLeave}
+      onClick={(e) => {
+        if (sheet && (e.target as HTMLElement).tagName === 'INPUT') return
+        onPin()
+      }}
+      className={`group relative flex min-w-[8.5rem] flex-1 cursor-help flex-col rounded-lg border transition ${wide ? 'basis-56' : 'basis-36'} ${
         highlight ? 'border-accent ring-4 ring-accent/40' : active ? 'border-accent ring-2 ring-accent/30' : c.redFlags ? 'border-line hover:border-danger/50' : 'border-line hover:border-primary/50'
       }`}
     >
-      <div className="flex items-center justify-between gap-2 px-2 pt-1.5">
-        <span className="truncate text-[11px] font-medium text-muted" title={c.label}>{c.label}</span>
-        <span className="flex items-center gap-1">
+      <div className="flex min-h-7 items-center justify-between gap-2 px-2 pt-1.5">
+        <span className="min-w-0 truncate text-[11px] font-medium text-muted" title={c.label}>{c.label}</span>
+        <span className="flex shrink-0 items-center gap-1">
           {c.redFlags && <AlertTriangle className="h-3 w-3 text-danger" aria-label="Tiene red flags" />}
           <span className="rounded bg-[#0b2545] px-1.5 font-mono text-[11px] font-semibold text-[#e0bb48]">{c.n}</span>
         </span>
@@ -333,7 +341,7 @@ function CasillaBox({ c, value, raw, blank, active, highlight, onChange, onEnter
         <input
           value={raw}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={onPin}
+          onFocus={sheet ? undefined : onPin}
           inputMode={isText ? 'text' : 'decimal'}
           aria-label={`Casilla ${c.n}: ${c.label}`}
           aria-describedby={active ? `tip-${c.n}` : undefined}

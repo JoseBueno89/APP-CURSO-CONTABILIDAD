@@ -16,5 +16,11 @@ export function Rich({ text }: { text: string }) {
   )
 }
 
-export const eur = (n: number) =>
-  n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// useGrouping 'always': en español Intl no agrupa los números de 4 cifras (1050,00) salvo que se fuerce
+const fmt = new Intl.NumberFormat('es-ES', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  useGrouping: 'always',
+} as unknown as Intl.NumberFormatOptions)
+
+export const eur = (n: number) => fmt.format(n)

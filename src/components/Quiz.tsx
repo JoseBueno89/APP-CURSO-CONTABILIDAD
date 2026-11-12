@@ -19,7 +19,7 @@ export default function Quiz({ questions, onFinish }: { questions: QuizQuestion[
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft"><Award className="h-5 w-5 text-accent" /></div>
         <div>
           <h2 id="quiz-title" className="text-lg font-bold text-ink">Autoevaluación</h2>
-          <p className="text-sm text-muted">Responde para completar la lección.</p>
+          <p className="text-sm text-muted">Acierta al menos la mitad para completar la lección.</p>
         </div>
       </div>
 
@@ -63,6 +63,9 @@ export default function Quiz({ questions, onFinish }: { questions: QuizQuestion[
         ) : (
           <>
             <div className="text-lg font-bold text-ink">Resultado: {score}/{questions.length}</div>
+            <span className={`text-sm font-semibold ${score / questions.length >= 0.5 ? 'text-ok' : 'text-danger'}`}>
+              {score / questions.length >= 0.5 ? 'Lección completada' : 'Necesitas acertar al menos la mitad para completar la lección'}
+            </span>
             <button onClick={() => { setSubmitted(false); setAnswers(questions.map(() => null)) }} className="flex items-center gap-1 text-sm text-muted hover:text-ink">
               <RotateCcw className="h-4 w-4" /> Repetir
             </button>

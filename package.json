@@ -1,7 +1,8 @@
 {
   "name": "academia-fiscal-blanqueo",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.1",
+  "appVersion": "1.01",
   "type": "module",
   "scripts": {
     "dev": "vite",

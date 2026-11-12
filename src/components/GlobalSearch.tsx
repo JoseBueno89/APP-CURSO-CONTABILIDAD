@@ -1,5 +1,6 @@
 import { AlertTriangle, BookMarked, BookOpen, CornerDownLeft, FileStack, Hash, Search, Wrench, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { search, type Group } from '../lib/searchIndex'
 
@@ -63,26 +64,26 @@ export default function GlobalSearch() {
   return (
     <>
       <button onClick={() => setOpen(true)}
-        className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm text-muted hover:border-primary/40 sm:max-w-sm"
+        className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm text-muted hover:border-primary/40 sm:max-w-sm"
         aria-label="Buscar en toda la plataforma">
-        <Search className="h-4 w-4" />
-        <span className="flex-1 truncate text-left">Buscar lecciones, casillas, términos…</span>
+        <Search className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-left"><span className="sm:hidden">Buscar…</span><span className="hidden sm:inline">Buscar lecciones, casillas, términos…</span></span>
         <kbd className="hidden rounded border border-line bg-surface-2 px-1.5 font-mono text-[10px] sm:inline">Ctrl K</kbd>
       </button>
 
-      {open && (
-        <div className="no-print fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[10vh]" onMouseDown={() => setOpen(false)} role="dialog" aria-modal="true" aria-label="Búsqueda global">
+      {open && createPortal(
+        <div className="no-print fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-3 pt-3 sm:px-4 sm:pt-[10vh]" onMouseDown={() => setOpen(false)} role="dialog" aria-modal="true" aria-label="Búsqueda global">
           <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl animate-fade-up" onMouseDown={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search className="h-5 w-5 text-muted" />
               <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown}
                 placeholder="¿Qué es la casilla 27 del 303? ¿Qué es un loan-back?…"
                 role="combobox" aria-expanded={results.length > 0} aria-controls="search-results" aria-activedescendant={results[idx] ? `sr-${idx}` : undefined}
-                className="h-14 flex-1 bg-transparent text-base text-ink placeholder:text-muted focus:outline-none" />
+                className="h-14 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-muted focus:outline-none" />
               <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-muted hover:text-ink"><X className="h-5 w-5" /></button>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[70dvh] overflow-y-auto overscroll-contain sm:max-h-[60vh]">
               {!q && (
                 <div className="p-4">
                   <div className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Prueba con</div>
@@ -115,7 +116,8 @@ export default function GlobalSearch() {
               </ul>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )

@@ -56,7 +56,7 @@ export default function CoursePage() {
                         <li key={l.id}>
                           <Link to={`/curso/${course.id}/${l.id}`} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 transition hover:border-primary/40 hover:bg-surface-2">
                             {c ? <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" /> : <PlayCircle className="h-5 w-5 shrink-0 text-primary" />}
-                            <div className="flex-1">
+                            <div className="min-w-0 flex-1">
                               <div className="text-sm font-semibold text-ink">{l.title}</div>
                               <div className="text-xs text-muted">{l.summary}</div>
                             </div>

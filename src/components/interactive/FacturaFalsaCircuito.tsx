@@ -15,7 +15,7 @@ export default function FacturaFalsaCircuito() {
   const Icon = s.icon
   return (
     <div className="my-8 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-line bg-surface-2 px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2 px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3 text-xs font-semibold text-muted">
           <span className="flex items-center gap-1"><User className="h-4 w-4 text-danger" /> Facturero</span>
           <ArrowRight className="h-3 w-3" />
@@ -30,9 +30,9 @@ export default function FacturaFalsaCircuito() {
           ))}
         </div>
       </div>
-      <div key={step} className="flex gap-4 p-5 animate-fade-up">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon className="h-6 w-6" /></div>
-        <div>
+      <div key={step} className="flex gap-3 p-4 animate-fade-up sm:gap-4 sm:p-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent sm:h-12 sm:w-12"><Icon className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+        <div className="min-w-0">
           <h4 className="font-bold text-ink">{step + 1}. {s.title}</h4>
           <p className="mt-1 text-sm leading-relaxed text-ink/90"><Rich text={s.text} /></p>
         </div>

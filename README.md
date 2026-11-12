@@ -26,6 +26,14 @@ Requisito único: en GitHub → *Settings → Pages → Source* = **GitHub Actio
 
 Una vez abierta con conexión, funciona también sin conexión. El progreso se guarda en cada dispositivo.
 
+## Historial de versiones
+
+- **1.01** — Tooltips de casillas recolocados (escritorio) y como panel inferior (móvil); diagrama del
+  fraude carrusel sin solapamientos y con versión móvil; corrección del desplazamiento horizontal en
+  móvil y del botón de modo oscuro; buscador global a pantalla completa; las lecciones exigen acertar
+  al menos la mitad del quiz; separador de miles uniforme; versión visible en el menú.
+- **1.0** — Versión inicial.
+
 ## Estructura
 
 ```

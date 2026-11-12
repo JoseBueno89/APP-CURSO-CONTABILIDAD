@@ -15,7 +15,7 @@ export default function IvaChain() {
 
   return (
     <div className="my-8 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-      <div className="flex items-center justify-between border-b border-line bg-surface-2 px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-2 px-4 py-3 sm:px-5">
         <span className="text-sm font-semibold text-ink">La cadena del IVA · paso {Math.min(step + 1, steps.length + 1)} de {steps.length + 1}</span>
         <div className="flex gap-2">
           <button onClick={() => setStep(0)} className="rounded-lg px-3 py-1 text-xs text-muted hover:text-ink">Reiniciar</button>
@@ -29,7 +29,7 @@ export default function IvaChain() {
         </div>
       </div>
 
-      <div className="flex flex-col items-stretch gap-3 p-5 md:flex-row md:items-center">
+      <div className="flex flex-col items-stretch gap-3 p-4 sm:p-5 md:flex-row md:items-center">
         {steps.map((s, i) => {
           const Icon = s.icon
           const active = i < step

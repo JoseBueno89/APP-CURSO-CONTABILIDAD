@@ -74,12 +74,12 @@ function Column({ title, bloques, sel, setSel }: { title: string; bloques: Bloqu
                 sel === p.id ? 'bg-accent-soft ring-1 ring-accent' : 'hover:bg-surface-2'
               }`}
             >
-              <span className="flex items-center gap-2 text-ink">
-                {p.flag ? <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" /> : <span className="w-3.5" />}
-                <span className="font-mono text-[11px] text-muted">{p.cuenta}</span>
-                {p.label}
+              <span className="flex min-w-0 items-center gap-2 text-ink">
+                {p.flag ? <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" /> : <span className="w-3.5 shrink-0" />}
+                <span className="hidden shrink-0 font-mono text-[11px] text-muted sm:inline">{p.cuenta}</span>
+                <span className="min-w-0">{p.label}</span>
               </span>
-              <span className={`font-mono ${p.importe < 0 ? 'text-danger' : 'text-ink'}`}>{eur(p.importe)}</span>
+              <span className={`shrink-0 font-mono ${p.importe < 0 ? 'text-danger' : 'text-ink'}`}>{eur(p.importe)}</span>
             </button>
           ))}
         </div>
@@ -103,13 +103,13 @@ export default function BalanceViewer() {
           <span>Empleados: <strong className="text-white">0</strong></span>
         </div>
       </div>
-      <div className="grid gap-6 p-5 md:grid-cols-2">
+      <div className="grid gap-6 p-3 sm:p-5 md:grid-cols-2">
         <Column title="Activo · lo que tiene" bloques={activo} sel={sel} setSel={setSel} />
         <Column title="Patrimonio neto y pasivo · cómo lo financia" bloques={pasivo} sel={sel} setSel={setSel} />
       </div>
-      <div className="grid grid-cols-2 border-t border-line bg-surface-2 font-mono text-sm">
-        <div className="flex justify-between px-5 py-2.5"><span className="text-muted">Total activo</span><strong className="text-ink">{eur(sum(activo))}</strong></div>
-        <div className="flex justify-between border-l border-line px-5 py-2.5"><span className="text-muted">Total PN + pasivo</span><strong className="text-ink">{eur(sum(pasivo))}</strong></div>
+      <div className="grid border-t border-line bg-surface-2 font-mono text-xs sm:grid-cols-2 sm:text-sm">
+        <div className="flex flex-wrap justify-between gap-x-3 px-4 py-2.5 sm:px-5"><span className="text-muted">Total activo</span><strong className="text-ink">{eur(sum(activo))}</strong></div>
+        <div className="flex flex-wrap justify-between gap-x-3 border-t border-line px-4 py-2.5 sm:border-l sm:border-t-0 sm:px-5"><span className="text-muted">Total PN + pasivo</span><strong className="text-ink">{eur(sum(pasivo))}</strong></div>
       </div>
       <div key={p.id} className="animate-fade-up border-t border-line p-5" aria-live="polite">
         <div className="mb-2 flex items-center gap-2 text-sm font-bold text-ink">
